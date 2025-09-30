@@ -2,7 +2,7 @@
  * @class Game
  * Main game controller and loop.
  */
-import { Farmer } from './Farmer.js';
+import { Farmer, AIFarmer } from './Farmer.js';
 import { Crop } from './Crop.js';
 import { Scarecrow } from './Obstacle.js';
 
@@ -30,7 +30,8 @@ export class Game {
         this.level = 1;
         this.maxLevel = 3;
         this.difficulty = (difficulty && difficulty.levels) ? difficulty.levels : null;
-        this.player = new Farmer(WIDTH / 2 - 17, HEIGHT - 80);
+    this.player = new Farmer(WIDTH / 2 - 17, HEIGHT - 80);
+    this.aiFarmer = new AIFarmer(WIDTH / 2 + 50, HEIGHT - 80);
         this.crops = [];
         this.obstacles = [];
         this.lastTime = 0;
@@ -52,12 +53,13 @@ export class Game {
         const get = id => document.getElementById(id) || console.error(`#${id} not found`);
         this.ui = {
             score: get("score"),
+            aiScore: get("aiScore"),
             time: get("time"),
             goal: get("goal"),
             status: get("status"),
             start: get("btnStart"),
             reset: get("btnReset"),
-            level: get("level"), // Add a UI element for level if present
+            level: get("level"),
         };
         if (this.ui.goal) this.ui.goal.textContent = String(this.goal);
         if (this.ui.level) this.ui.level.textContent = `Level ${this.level}`;
@@ -97,7 +99,8 @@ export class Game {
      */
     reset() {
         this.state = State.MENU;
-        this.player = new Farmer(WIDTH / 2 - 17, HEIGHT - 80);
+    this.player = new Farmer(WIDTH / 2 - 17, HEIGHT - 80);
+    this.aiFarmer = new AIFarmer(WIDTH / 2 + 50, HEIGHT - 80);
         this.crops.length = 0;
         this.obstacles.length = 0;
         this.score = 0;
@@ -139,7 +142,8 @@ export class Game {
      * Sync UI elements
      */
     syncUI() {
-        if (this.ui.score) this.ui.score.textContent = String(this.score);
+    if (this.ui.score) this.ui.score.textContent = String(this.score);
+    if (this.ui.aiScore) this.ui.aiScore.textContent = String(this.aiFarmer ? this.aiFarmer.aiScore : 0);
         if (this.ui.time) this.ui.time.textContent = Math.ceil(this.timeLeft);
         if (this.ui.goal) this.ui.goal.textContent = String(this.goal);
         if (this.ui.level) this.ui.level.textContent = `Level ${this.level}`;
@@ -199,13 +203,15 @@ export class Game {
             this.syncUI();
             return;
         }
-        this.player.handleInput(this.input);
-        this.player.update(dt, this);
+    this.player.handleInput(this.input);
+    this.player.update(dt, this);
+    this.aiFarmer.update(dt, this);
         this._accumSpawn += dt;
         while (this._accumSpawn >= this.spawnEvery) {
             this._accumSpawn -= this.spawnEvery;
             this.spawnCrop();
         }
+        // Player collects crops
         const collected = this.crops.filter(c => aabb(this.player, c));
         if (collected.length) {
             collected.forEach(c => c.dead = true);
@@ -230,6 +236,13 @@ export class Game {
                 return;
             }
         }
+        // AI collects crops
+        const aiCollected = this.crops.filter(c => aabb(this.aiFarmer, c));
+        if (aiCollected.length) {
+            aiCollected.forEach(c => c.dead = true);
+            this.aiFarmer.aiScore += aiCollected.reduce((sum, c) => sum + (c.points || 1), 0);
+            if (this.ui.aiScore) this.ui.aiScore.textContent = String(this.aiFarmer.aiScore);
+        }
         this.crops = this.crops.filter(c => !c.dead);
         this.crops.forEach(c => c.update(dt, this));
         if (this.ui.time) this.ui.time.textContent = Math.ceil(this.timeLeft);
@@ -253,7 +266,8 @@ export class Game {
         }
         this.crops.forEach(c => c.draw(ctx));
         this.obstacles.forEach(o => o.draw(ctx));
-        this.player.draw(ctx);
+    this.player.draw(ctx);
+    this.aiFarmer.draw(ctx);
         ctx.fillStyle = "#333";
         ctx.font = "16px system-ui, sans-serif";
         if (this.state === State.MENU) {
