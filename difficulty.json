@@ -1,0 +1,19 @@
+{
+  "levels": [
+    {
+      "spawnEvery": 0.8,
+      "gameLen": 60,
+      "goal": 15
+    },
+    {
+      "spawnEvery": 0.6,
+      "gameLen": 55,
+      "goal": 20
+    },
+    {
+      "spawnEvery": 0.4,
+      "gameLen": 50,
+      "goal": 25
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+Farmer Harvest: Reflection on JavaScript Language Features and Game Development
+
+(a) Example where using an arrow function was required to preserve the correct `this`
+
+During my refactoring of Farmer Harvest, I encountered several scenarios where the choice of function syntax directly impacted the behavior of `this`. One clear example was in the implementation of the main game loop using `requestAnimationFrame`. In my `Game` class, I defined the loop as an arrow function:
+
+```javascript
+this.tick = (ts) => {
+    // ...update and render logic...
+    requestAnimationFrame(this.tick);
+};
+```
+
+Here, the arrow function was essential because it lexically binds `this` to the surrounding context, which is the instance of the `Game` class. If I had used a regular function, `this` would have been either `undefined` or the global object, depending on strict mode, causing the loop to break or behave unpredictably. By using an arrow function, I ensured that all references to `this` inside the loop correctly pointed to the game instance, allowing seamless updates and rendering.
+
+(b) Example where `bind` was more appropriate than an arrow function, and why
+
+While arrow functions are powerful for preserving lexical `this`, there are cases where `.bind(this)` is the more appropriate tool. A prime example is in the `Input` class, where I set up event listeners for keyboard input:
+
+```javascript
+this._onKeyDown = this.onKeyDown.bind(this);
+window.addEventListener("keydown", this._onKeyDown);
+```
+
+In this context, I needed to ensure that the `onKeyDown` method always had its `this` bound to the `Input` instance, regardless of how the browser invoked the event handler. Using `.bind(this)` was crucial because it allowed me to later remove the event listener with the exact same function reference. If I had used an arrow function directly in the event listener, I would not have been able to remove it cleanly, as each arrow function is a new object. Additionally, binding is preferable for class methods that may need to be detached or reused, whereas arrow functions are best for short-lived callbacks.
+
+(c) Major improvement I would implement with one more week
+
+If I had an additional week to polish Farmer Harvest, I would focus on implementing a robust progression and upgrade system. My vision would be to allow players to unlock new abilities, tools, and farm expansions as they achieve milestones or collect specific crops. For example, harvesting enough golden apples could unlock a temporary speed boost or a new type of crop with unique mechanics. I would also introduce persistent upgrades, such as expanding the playable field, adding new obstacles, or customizing the farmer's appearance. This system would add strategic depth, replayability, and a sense of long-term achievement, transforming the game from a simple arcade experience into a more engaging and rewarding journey. I believe this would significantly enhance player motivation and satisfaction, aligning the project with modern game design principles.
+
+---
+
+This reflection demonstrates my understanding of JavaScript language features and my approach to iterative game development. I am confident that these insights and improvements would contribute meaningfully to both the technical quality and player experience of Farmer Harvest.
